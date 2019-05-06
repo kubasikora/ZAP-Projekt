@@ -1,0 +1,145 @@
+\documentclass{mwrep}
+
+% Polskie znaki
+\usepackage{polski}
+\usepackage[polish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{luainputenc}
+\usepackage{lmodern}
+\usepackage{indentfirst}
+
+% Strona tytułowa
+\usepackage{pgfplots}
+\usepackage{siunitx}
+\usepackage{paracol}
+\usepackage{gensymb}
+
+% Pływające obrazki
+\usepackage{float}
+\usepackage{svg}
+\usepackage{graphicx}
+
+% table of contents refs
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{placeins}
+\usepackage{xcolor}
+
+\usetikzlibrary{pgfplots.groupplots}
+\sisetup{detect-weight,exponent-product=\cdot,output-decimal-marker={,},per-mode=symbol,binary-units=true,range-phrase={-},range-units=single}
+\definecolor{szary}{rgb}{0.95,0.95,0.95}
+%konfiguracje pakietu listings
+\lstset{
+	backgroundcolor=\color{szary},
+	frame=single,
+	breaklines=true,
+}
+\lstdefinestyle{customlatex}{
+	basicstyle=\footnotesize\ttfamily,
+	%basicstyle=\small\ttfamily,
+}
+\lstdefinestyle{customc}{
+	breaklines=true,
+	frame=tb,
+	language=C,
+	xleftmargin=0pt,
+	showstringspaces=false,
+	basicstyle=\small\ttfamily,
+	keywordstyle=\bfseries\color{green!40!black},
+	commentstyle=\itshape\color{purple!40!black},
+	identifierstyle=\color{blue},
+	stringstyle=\color{orange},
+}
+\lstdefinestyle{custommatlab}{
+	%basicstyle=\fontsize{11}{13}\selectfont\ttfamily,
+	captionpos=t,
+	breaklines=true,
+	frame=tb,
+	xleftmargin=0pt,
+	language=matlab,
+	showstringspaces=false,
+	%basicstyle=\footnotesize\ttfamily,
+	basicstyle=\scriptsize\ttfamily,
+	keywordstyle=\bfseries\color{green!40!black},
+	commentstyle=\itshape\color{purple!40!black},
+	identifierstyle=\color{blue},
+	stringstyle=\color{orange},
+}
+
+%wymiar tekstu
+\def\figurename{Rys.}
+\def\tablename{Tab.}
+
+%konfiguracja liczby p�ywaj�cych element�w
+\setcounter{topnumber}{0}%2
+\setcounter{bottomnumber}{3}%1
+\setcounter{totalnumber}{5}%3
+\renewcommand{\textfraction}{0.01}%0.2
+\renewcommand{\topfraction}{0.95}%0.7
+\renewcommand{\bottomfraction}{0.95}%0.3
+\renewcommand{\floatpagefraction}{0.35}%0.5
+
+\SendSettingsToPgf
+\title{\bf Prezentacja i omówienie architektury modułu ESP8266 \vskip 0.1cm}
+\author{Jakub Sikora}
+\date{\today}
+\pgfplotsset{compat=1.15}	
+\begin{document}
+\frenchspacing
+\pagestyle{uheadings}
+
+\makeatletter
+\renewcommand{\maketitle}{\begin{titlepage}
+		\begin{center}{
+				\LARGE {\bf Politechnika Warszawska}}\\
+            \vspace{0.4cm}
+            \leftskip-0.9cm
+            {\LARGE {\bf \mbox{Wydział Elektroniki i Technik Informacyjnych}}}\\
+            \vspace{0.2cm}
+            {\LARGE {\bf \mbox{Instytut Automatyki i Informatyki Stosowanej}}}\\
+            
+            \vspace{5cm}
+            \leftskip-2cm
+			{\bf \Huge \mbox{Zaawansowane architektury procesorów} \vskip 0.1cm}
+		\end{center}
+		\vspace{0.1cm}
+
+		\begin{center}
+			{\bf \LARGE \@title}
+		\end{center}
+
+		\vspace{9cm}
+		\begin{paracol}{2}
+			\addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
+			\subsection*{Zespół:}
+			\bf{ \Large{ \noindent\@author \par}}
+			\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+
+			\switchcolumn \addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
+			\subsection*{Prowadzący:}
+			\bf{\Large{\noindent \mbox{mgr inż. Grzegorz Mazur}}}
+			\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+
+		\end{paracol}
+		\vspace*{\stretch{6}}
+		\begin{center}
+			\bf{\large{Warszawa, \@date\vskip 0.1cm}}
+		\end{center}
+	\end{titlepage}
+}
+\makeatother
+\maketitle
+\tableofcontents
+
+\input{sections/OmowienieArchitektury}
+\input{sections/ProjektCzujnika}
+\input{sections/InneMozliwosci}
+\input{sections/Bibliografia}
+
+
+
+
+\end{document}
