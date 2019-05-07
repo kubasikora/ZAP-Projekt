@@ -157,5 +157,39 @@ W ESP8266 znalazło się miejsce na sprzętowy interfejs SPI. Możliwe jest poł
 urządzeniem jako master lub jako slave.
 
 
+\subsubsection{I2S}
+\label{i2s}
+ESP8266 obsługuje interfejs I2S (\textit{Inter-IC Sound}). W obecnej wersji dostępny
+jest jest interfejs wejściowy i jeden interfejs wyjściowy.
+
+\subsubsection{PWM}
+\label{pwm}
+Na pokładzie modułu znajdują się cztery wyjścia PWM, których funkcjonalność może
+być rozszerzana poprzez użytkownika.
+
+\subsubsection{ADC}
+Moduł ESP8266 został wyposażony w typowy konwerter analogowo-cyfrowy typu SAR, opierający
+się na sukcesywnej aproksymacji sygnału. Konwerter ma 10 bitową dokładność, co oznacza
+że może mierzyć sygnały z dokładnością do $\num{3.2}$ \si{mV}. Na płytce znajduje się
+tylko jedno wyprowadzenie konwertera, multipleksowane z pinem \verb+GPIO6+.
+
+\subsubsection{UART}
+Moduł ESP8266 został zaopatrzony w dwa interfejsy sprzętowe UART. Pierwszy z nich
+obsługuje obustronną komunikację, natomiast drugi posiada tylko sygnał Tx, co naturalnie
+sprowadza go do funkcji swoistego loggera do wypisywania stanu systemu. Prędkość transmisji
+może zostać zwiększona aż do $\num{4.5}$ Mbps. 
+
+W dokumentacji bootloadera znajduje się informacja o logach wypisywanych 
+na interfejsie \verb+UART0+, podczas uruchamiania systemu. 
+Prędkość transmisji zależy wtedy od częstotliwości
+wewnętrznego oscylatora. Jeśli ustawiona jest na bazowe $\num{40}$ \si{MHz} to 
+prędkość transmisji wynosi wtedy $\num{115200}$ bps. Należy zwrócić na to uwagę
+przy zmniejszaniu częstotliwości oscylatora, w celu zmniejszenia zużycia energii.
+
+\subsubsection{I2C}
+Dodatkowo, producent programowo zaimplementował obsługę interfejsu I2C. 
+Urządzenie może pełnić rolę Master lub Slave, z takim zastrzeżeniem że zegar
+taktujący komunikację może mieć częstotliwość maksymalną $\num{100}$ \si{kHz}.
+
 \section{Organizacja oprogramowania}
 \label{organizacja_opr}
