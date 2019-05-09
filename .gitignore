@@ -61,3 +61,10 @@ dkms.conf
 *.pdf
 *.synctex.gz
 *.toc
+
+# Build files
+src/build/* 
+*.old
+
+# VS Code files
+.vscode/*
