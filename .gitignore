@@ -68,3 +68,6 @@ src/build/*
 
 # VS Code files
 .vscode/*
+
+# Server files
+server/node_modules/*

@@ -1,0 +1,14 @@
+{
+  "name": "zap-server",
+  "version": "1.0.0",
+  "description": "Simple http server for communication with ESP8266 module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jakub Sikora",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.16.4"
+  }
+}

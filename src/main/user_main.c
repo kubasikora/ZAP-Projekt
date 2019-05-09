@@ -1,11 +1,3 @@
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -17,16 +9,32 @@
 
 #include "driver/uart.h"
 
+#include <netdb.h>
+#include <sys/socket.h>
+#include <string.h>
 
-#define ECHO_BUFFER_SIZE 1024
+// echo task
+#define ECHO_BUFFER_SIZE (1024)
+
+// wifi credentials
 #define WIFI_SSID "esp-test"
 #define WIFI_PASS "esp-test"
 
-/* FreeRTOS event group to signal when we are connected*/
+// server info
+#define WEB_SERVER "example.com"
+#define WEB_PORT (80)
+#define WEB_URL "http://example.com/"
+
+static const char* REQUEST = "GET " WEB_URL " HTTP/1.0\r\n"
+    "Host: "WEB_SERVER"\r\n"
+    "User-Agent: esp-idf/1.0 esp32\r\n"
+    "\r\n";
+
+// FreeRTOS event group to signal when we are connected 
 static EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 
-static const char* TAG = "simple wifi";
+static const char* TAG = "ZAP";
 
 static esp_err_t event_handler(void *ctx, system_event_t *event){
     switch(event->event_id){
@@ -35,21 +43,16 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
         break;
 
       case SYSTEM_EVENT_STA_GOT_IP:
-        ESP_LOGI(TAG, "got ip:%s",
-                 ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
+        ESP_LOGI(TAG, "got ip: %s", ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
         break;
 
       case SYSTEM_EVENT_AP_STACONNECTED:
-        ESP_LOGI(TAG, "station:"MACSTR" join, AID=%d",
-                 MAC2STR(event->event_info.sta_connected.mac),
-                 event->event_info.sta_connected.aid);
+        ESP_LOGI(TAG, "station: "MACSTR" join, AID=%d", MAC2STR(event->event_info.sta_connected.mac), event->event_info.sta_connected.aid);
         break;
 
       case SYSTEM_EVENT_AP_STADISCONNECTED:
-        ESP_LOGI(TAG, "station:"MACSTR"leave, AID=%d",
-                 MAC2STR(event->event_info.sta_disconnected.mac),
-                 event->event_info.sta_disconnected.aid);
+        ESP_LOGI(TAG, "station: "MACSTR"leave, AID=%d", MAC2STR(event->event_info.sta_disconnected.mac), event->event_info.sta_disconnected.aid);
         break;
 
       case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -62,6 +65,35 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
     }
     return ESP_OK;
 }
+
+
+static void http_get_task(void *pvParameters){
+    const struct addrinfo hints = {
+        .ai_family = AF_INET,
+        .ai_socktype = SOCK_STREAM,
+    };
+    struct addrinfo *res;
+    struct in_addr *addr;
+    int s, r;
+    char recv_buf[64];
+
+    while(1){
+        xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
+        ESP_LOGI(TAG, "Connected to AP");
+        
+        // find IP of service
+        int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
+        if (err != 0 || res == NULL){
+            ESP_LOGE(TAG, "DNS lookup failed error = %d, res = %p", err, res);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        addr = &((struct sockaddr_in*)res->ai_addr)->sin_addr;
+        ESP_LOGI(TAG, "DNS lookup succeded. IP=%s", inet_ntoa(*addr));
+    }
+}
+
 
 
 static void echo_task(){
