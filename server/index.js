@@ -6,8 +6,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.post('/data', (req, res) => {
-    var query = req.body.data;
-    console.log(req.body);
+    var data = req.body.data;
+    console.log("Got " + data + " from ESP8266");
     res.send("OK\n");
 });
 
