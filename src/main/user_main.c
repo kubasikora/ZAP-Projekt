@@ -21,9 +21,9 @@
 #define WIFI_PASS "esp-test"
 
 // server info
-#define WEB_SERVER "example.com"
+#define WEB_SERVER "studia.elka.pw.edu.pl"
 #define WEB_PORT (80)
-#define WEB_URL "http://example.com/"
+#define WEB_URL "http://studia.elka.pw.edu.pl"
 
 static const char* REQUEST = "GET " WEB_URL " HTTP/1.0\r\n"
     "Host: "WEB_SERVER"\r\n"
@@ -37,6 +37,7 @@ const int WIFI_CONNECTED_BIT = BIT0;
 static const char* TAG = "ZAP";
 
 static esp_err_t event_handler(void *ctx, system_event_t *event){
+    static const char* TAG = "EVENT HANDLER";
     switch(event->event_id){
       case SYSTEM_EVENT_STA_START:
         esp_wifi_connect();
@@ -68,6 +69,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
 
 
 static void http_get_task(void *pvParameters){
+    static const char *TAG = "HTTP_TASK";
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
@@ -88,9 +90,64 @@ static void http_get_task(void *pvParameters){
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
-
         addr = &((struct sockaddr_in*)res->ai_addr)->sin_addr;
         ESP_LOGI(TAG, "DNS lookup succeded. IP=%s", inet_ntoa(*addr));
+
+        // Create socket
+        s = socket(res->ai_family, res->ai_socktype, 0);
+        if(s < 0){
+            ESP_LOGE(TAG, "Failed to allocate socket.");
+            freeaddrinfo(res);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+        ESP_LOGI(TAG, "Allocated socket");
+
+        // Connect to socket
+        if(connect(s, res->ai_addr, res->ai_addrlen) != 0){
+            ESP_LOGE(TAG, "Failed to connect with socket, errno = %d", errno);
+            close(s);
+            freeaddrinfo(res);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+        ESP_LOGI(TAG, "connected to %s", WEB_URL);
+        freeaddrinfo(res);
+
+        // Write request to socket
+        if(write(s, REQUEST, strlen(REQUEST)) < 0){
+            ESP_LOGE(TAG, "Failed to send to socket");
+            close(s);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+        ESP_LOGI(TAG, "Socket send success");
+
+        // Set socket receiving timeout
+        struct timeval receiving_timeout;
+        receiving_timeout.tv_sec = 5;
+        receiving_timeout.tv_usec = 0;
+        if(setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, sizeof(receiving_timeout)) < 0){
+            ESP_LOGE(TAG, "Failed to set socket receiving output");
+            close(s);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+        ESP_LOGI(TAG, "Set socket receiving timeout success");
+
+        // Read HTTP response 
+        do {
+            bzero(recv_buf, sizeof(recv_buf));
+            r = read(s, recv_buf, sizeof(recv_buf)-1);
+            for(int i = 0; i < r; i++){
+                putchar(recv_buf[i]); //print response
+            }
+        } while(r > 0);
+        ESP_LOGI(TAG, "Done reading from socket");
+        close(s);
+
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+        ESP_LOGI(TAG, "Starting again!");
     }
 }
 
@@ -104,16 +161,6 @@ static void echo_task(){
         int len = uart_read_bytes(UART_NUM_0, data, ECHO_BUFFER_SIZE, 20 / portTICK_RATE_MS);
         // Write data back to the UART
         uart_write_bytes(UART_NUM_0, (const char *) data, len);
-    }
-}
-
-
-static void hello_task(){
-    char buffer[30];
-    while(1){
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
-        uint8_t length = sprintf(buffer, "Hello! Time: %d\n", esp_log_timestamp());
-        uart_write_bytes(UART_NUM_0, buffer, length+1);
     }
 }
 
@@ -132,12 +179,12 @@ void wifi_init_sta(){
         },
     };
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start() );
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
-    ESP_LOGI(TAG, "connect to ap SSID:%s password:%s", WIFI_SSID, WIFI_PASS);
+    ESP_LOGI(TAG, "connect to ap SSID: %s password: %s", WIFI_SSID, WIFI_PASS);
 }
 
 
@@ -159,5 +206,5 @@ void app_main(){
     wifi_init_sta();
 
     xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);
-    xTaskCreate(hello_task, "hello_task", 1024, NULL, 10, NULL);
+    xTaskCreate(http_get_task, "http_get_task", 1024, NULL, 10, NULL);
 }
