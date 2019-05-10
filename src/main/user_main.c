@@ -21,11 +21,17 @@
 #define WIFI_PASS "esp-test"
 
 // server info
-#define WEB_SERVER "studia.elka.pw.edu.pl"
-#define WEB_PORT (80)
-#define WEB_URL "http://studia.elka.pw.edu.pl"
+#define WEB_SERVER "dell"
+#define WEB_PORT "8081"
+#define WEB_URL "/"
 
-static const char* REQUEST = "GET " WEB_URL " HTTP/1.0\r\n"
+
+static const char* GET_REQUEST = "GET " WEB_URL " HTTP/1.0\r\n"
+    "Host: "WEB_SERVER":"WEB_PORT"\r\n"
+    "User-Agent: esp-idf/1.0 esp32\r\n"
+    "\r\n";
+
+static const char* POST_REQUEST = "POST " WEB_URL " HTTP/1.0\r\n"
     "Host: "WEB_SERVER"\r\n"
     "User-Agent: esp-idf/1.0 esp32\r\n"
     "\r\n";
@@ -82,9 +88,9 @@ static void http_get_task(void *pvParameters){
     while(1){
         xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
         ESP_LOGI(TAG, "Connected to AP");
-        
+
         // find IP of service
-        int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
+        int err = getaddrinfo(WEB_SERVER, WEB_PORT, &hints, &res);
         if (err != 0 || res == NULL){
             ESP_LOGE(TAG, "DNS lookup failed error = %d, res = %p", err, res);
             vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -115,7 +121,7 @@ static void http_get_task(void *pvParameters){
         freeaddrinfo(res);
 
         // Write request to socket
-        if(write(s, REQUEST, strlen(REQUEST)) < 0){
+        if(write(s, GET_REQUEST, strlen(GET_REQUEST)) < 0){
             ESP_LOGE(TAG, "Failed to send to socket");
             close(s);
             vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -206,5 +212,5 @@ void app_main(){
     wifi_init_sta();
 
     xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);
-    xTaskCreate(http_get_task, "http_get_task", 1024, NULL, 10, NULL);
+    xTaskCreate(http_get_task, "http_get_task", 4096, NULL, 10, NULL);
 }
