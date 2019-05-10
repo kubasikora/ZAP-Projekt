@@ -17,8 +17,8 @@
 #define ECHO_BUFFER_SIZE (1024)
 
 // wifi credentials
-#define WIFI_SSID "esp-test"
-#define WIFI_PASS "esp-test"
+#define WIFI_SSID "NiechRyczyZBoluRannyLos"
+#define WIFI_PASS "br3dz1pan"
 
 // server info
 #define WEB_SERVER "dell"
@@ -28,11 +28,6 @@
 
 
 static const char* GET_REQUEST = "GET " GET_WEB_URL " HTTP/1.0\r\n"
-    "Host: "WEB_SERVER":"WEB_PORT"\r\n"
-    "User-Agent: esp-idf/1.0 esp32\r\n"
-    "\r\n";
-
-static const char* POST_REQUEST = "POST " POST_WEB_URL " HTTP/1.0\r\n"
     "Host: "WEB_SERVER":"WEB_PORT"\r\n"
     "User-Agent: esp-idf/1.0 esp32\r\n"
     "\r\n";
@@ -153,7 +148,7 @@ static void http_get_task(void *pvParameters){
         ESP_LOGI(TAG, "Done reading from socket");
         close(s);
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
         ESP_LOGI(TAG, "Starting again!");
     }
 }
@@ -161,18 +156,37 @@ static void http_get_task(void *pvParameters){
 
 static void http_post_task(void *pvParameters){
     static const char *TAG = "HTTP_POST_TASK";
+    static const char* POST_REQUEST = "POST " POST_WEB_URL " HTTP/1.0\r\n"
+    "Host: "WEB_SERVER":"WEB_PORT"\r\n"
+    "User-Agent: esp-idf/1.0 esp32\r\n"
+    "Content-Type: application/x-www-form-urlencoded\r\n"
+    "Content-Length: ";
+
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
     };
     struct addrinfo *res;
     struct in_addr *addr;
-    int s, r;
-    char recv_buf[64];
+    int s;
+    
+    char message[1024];
+    int message_length;
+    char body[512];
+    int body_length;
+    
+    int counter = 0;
 
     while(1){
         xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
         ESP_LOGI(TAG, "Connected to AP");
+
+        ++counter;
+        body_length = sprintf(body, "data=%d", counter);
+        ESP_LOGI(TAG, "body_len = %d", body_length);
+
+        message_length = sprintf(message, "%s%d\r\n\r\n%s\r\n\r\n", POST_REQUEST, body_length, body);
+
 
         // find IP of service
         int err = getaddrinfo(WEB_SERVER, WEB_PORT, &hints, &res);
@@ -206,7 +220,7 @@ static void http_post_task(void *pvParameters){
         freeaddrinfo(res);
 
         // Write request to socket
-        if(write(s, POST_REQUEST, strlen(POST_REQUEST)) < 0){
+        if(write(s, message, message_length) < 0){
             ESP_LOGE(TAG, "Failed to send to socket");
             close(s);
             vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -225,20 +239,9 @@ static void http_post_task(void *pvParameters){
             continue;
         }
         ESP_LOGI(TAG, "Set socket receiving timeout success");
-
-        // Read HTTP response 
-        do {
-            bzero(recv_buf, sizeof(recv_buf));
-            r = read(s, recv_buf, sizeof(recv_buf)-1);
-            for(int i = 0; i < r; i++){
-                putchar(recv_buf[i]); //print response
-            }
-        } while(r > 0);
-        ESP_LOGI(TAG, "Done reading from socket");
         close(s);
 
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, "Starting again!");
+        vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
 
