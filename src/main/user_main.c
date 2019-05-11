@@ -17,8 +17,8 @@
 
 #include "include/tasks.h"
 
-#define WIFI_SSID "NiechRyczyZBoluRannyLos"
-#define WIFI_PASS "br3dz1pan"
+#define WIFI_SSID "esp-test"
+#define WIFI_PASS "esp-test"
 
 EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;

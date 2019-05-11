@@ -17,7 +17,6 @@ void adc_task(void *pvParameters){
         if (ESP_OK == adc_read(&adc_data[0])) {
             ESP_LOGI(TAG, "adc read: %d", adc_data[0]);
             sensorValue =  adc_data[0]*A + B;
-            ESP_LOGI(TAG, "temperature value: %e", sensorValue);
         }
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
