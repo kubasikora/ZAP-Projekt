@@ -101,4 +101,34 @@ wspomniane w \ref{pamiec}. Aby w ten sposób wgrać program, należy skorzystać
 
 \section{Budowa przykładowego programu w języku C}
 \label{example_C}
+Przykładowy program oparty o FreeRTOS składa się zadań oraz kodu 
+inicjalizującego. W pierwszej kolejnośći inicjalizowane są peryferia oraz inne struktury
+systemowe, a następnie uruchamiane są zadania, które wykonują się w sposób współbieżny. \\
 
+Na poniższym listingu została przedstawiona funkcja \texttt{app\_{}main} przykładowego programu
+realizującego dwa zadania, od której moduł rozpoczyna pracę po restarcie.
+
+\begin{lstlisting}[style=customc,
+    frame=single,
+    caption={Przykładowa funkcja \texttt{app\_{}main}},
+    captionpos=b,
+    label={esptool_basic}]
+
+void app_main(){
+  #include"freertos/FreeRTOS.h"
+  #include"freertos/task.h"
+  #include"esp_system.h"
+  #include"driver/uart.h"
+  #include"driver/adc.h"
+
+  uart_init();
+  initialize_adc();
+    
+  xTaskCreate(adc_task, "adc_task", 1024, NULL, 10, NULL);
+  xTaskCreate(uart_task, "uart_task", 1024, NULL, 10, NULL);
+}
+\end{lstlisting}
+
+Funkcja inicjuje wykorzystywany w programie UART oraz konwerter analogowo cyfrowy.
+W dalszej kolejności, tworzone są zadania za pomocą funkcji \texttt{xTaskCreate}.
+Jako pierwszy parametr pobiera ona wskaźnik na funkcję, która wykonuje dane zadanie.
