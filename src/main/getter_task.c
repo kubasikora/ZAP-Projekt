@@ -89,6 +89,7 @@ void http_get_task(void *pvParameters){
         }
         ESP_LOGI(TAG, "Set socket receiving timeout success");
 
+        /*
         // Read HTTP response 
         do {
             bzero(recv_buf, sizeof(recv_buf));
@@ -97,7 +98,8 @@ void http_get_task(void *pvParameters){
                 putchar(recv_buf[i]); //print response
             }
         } while(r > 0);
-        ESP_LOGI(TAG, "Done reading from socket");
+        ESP_LOGI(TAG, "Done reading from socket");        
+        */
         close(s);
 
         vTaskDelay(10000 / portTICK_PERIOD_MS);

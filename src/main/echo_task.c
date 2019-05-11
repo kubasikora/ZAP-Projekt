@@ -1,17 +1,11 @@
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
 
-#include "esp_wifi.h"
 #include "esp_system.h"
-#include "esp_event.h"
-#include "esp_event_loop.h"
-
 #include "driver/uart.h"
 
 #include "include/tasks.h"
 
-void echo_task(){
+void echo_task(void *pvParameters){
     // Configure a temporary buffer for the incoming data
     uint8_t *data = (uint8_t *) malloc(ECHO_BUFFER_SIZE);
     while (1){

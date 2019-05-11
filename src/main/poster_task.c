@@ -25,6 +25,24 @@ static const char* POST_REQUEST = "POST " POST_WEB_URL " HTTP/1.0\r\n"
     "Content-Type: application/x-www-form-urlencoded\r\n"
     "Content-Length: ";
 
+void convertToFloat(float val, char *buff) {
+   char smallBuff[16];
+   int val1 = (int) val;
+   unsigned int val2;
+   if (val < 0) {
+      val2 = (int) (-100.0 * val) % 100;
+   } else {
+      val2 = (int) (100.0 * val) % 100;
+   }
+   if (val2 < 10) {
+      sprintf(smallBuff, "%i.0%u", val1, val2);
+   } else {
+      sprintf(smallBuff, "%i.%u", val1, val2);
+   }
+
+   strcpy(buff, smallBuff);
+}
+
 void http_post_task(void *pvParameters){
     const struct addrinfo hints = {
         .ai_family = AF_INET,
@@ -39,16 +57,15 @@ void http_post_task(void *pvParameters){
     char body[512];
     int body_length;
     
-    int counter = 0;
-
     while(1){
         xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
         ESP_LOGI(TAG, "Connected to AP");
 
-        ++counter;
-        body_length = sprintf(body, "data=%d", counter);
-        ESP_LOGI(TAG, "body_len = %d", body_length);
-
+        // create message
+        char sensorVal[16];
+        convertToFloat(sensorValue, sensorVal);
+        ESP_LOGI(TAG, "Sensor value: %s", sensorVal);
+        body_length = sprintf(body, "data=%s", sensorVal);
         message_length = sprintf(message, "%s%d\r\n\r\n%s\r\n\r\n", POST_REQUEST, body_length, body);
 
 

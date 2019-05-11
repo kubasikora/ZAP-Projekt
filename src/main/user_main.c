@@ -1,13 +1,15 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/queue.h"
 
 #include "esp_wifi.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
-
 #include "driver/uart.h"
+#include "driver/adc.h"
+
 
 #include <netdb.h>
 #include <sys/socket.h>
@@ -15,11 +17,9 @@
 
 #include "include/tasks.h"
 
-// wifi credentials
-#define WIFI_SSID "esp-test"
-#define WIFI_PASS "esp-test"
+#define WIFI_SSID "NiechRyczyZBoluRannyLos"
+#define WIFI_PASS "br3dz1pan"
 
-// FreeRTOS event group to signal when we are connected 
 EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 
@@ -73,7 +73,7 @@ void wifi_init_sta(){
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
     ESP_LOGI(TAG, "connect to ap SSID: %s password: %s", WIFI_SSID, WIFI_PASS);
@@ -92,11 +92,19 @@ void uart_init(){
     uart_driver_install(UART_NUM_0, ECHO_BUFFER_SIZE * 2, 0, 0, NULL);
 }
 
+static void initialize_adc(){
+    adc_config_t adc_config;
+    adc_config.mode = ADC_READ_TOUT_MODE;
+    adc_config.clk_div = 8;
+    ESP_ERROR_CHECK(adc_init(&adc_config));
+}
 
 void app_main(){
     uart_init();
     wifi_init_sta();
+    initialize_adc();
 
+    xTaskCreate(adc_task, "adc_task", 1024, NULL, 10, NULL);
     xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);
     xTaskCreate(http_get_task, "http_get_task", 4096, NULL, 10, NULL);
     xTaskCreate(http_post_task, "http_post_task", 4096, NULL, 10, NULL);
