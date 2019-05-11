@@ -45,8 +45,8 @@ pamięć operacyjna modułu.
 Wewnętrzna pamięć ROM nie jest programowalna a jej rozmiar wynosi $\num{64}$ KiB.
 Pamięć ROM mapowana jest w taki sposób że rozpoczyna się od adresu \texttt{40000000h}.
 W pamięci ROM znajduje się bootloader, który obsługuje pobieranie nowego programu poprzez
-UART oraz jego wykonywaniem z pamięci Flash, a także implementacja podstawowych funkcji typu
-\texttt{alloc} czy \texttt{memcpy}.
+UART oraz zajmuje się jego wykonywaniem z pamięci Flash. W pamięci ROM znajujde się także 
+implementacja podstawowych funkcji systemowych typu \texttt{alloc} czy \texttt{memcpy}.
 
 \begin{figure}[H]
 	\leftskip3cm
@@ -60,7 +60,11 @@ pamięć Flash do przechowywania programów użytkownika. Według dokumentacji, 
 możliwość podłączenia pamięci o maksymalnym rozmiarze $\num{16}$ MiB. Zakłada się 
 że minimalny rozmiar pamięci Flash powinien wynosić $\num{512}$ KiB w przypadku wyłaczonej
 funkcjonalności OTA (Over The Air Update) i $\num{1}$ MiB przy włączonym OTA. Komunikacja
-z pamięcią Flash zachodzi przy pomocy interfejsu SPI.
+z pamięcią Flash zachodzi przy pomocy interfejsu SPI.\\
+
+Program wykonywany może zostać również załadowany bezpośrednio do pamięci RAM z pominięciem 
+pamięci Flash. Pozwala to na znaczne przyspieszenie działania programu, jednak należy pamiętać 
+że w przypadku utraty zasilania, zawartość pamięci RAM zostanie stracona.
 
 \subsection{Wi-Fi}
 \label{wifi}
@@ -190,16 +194,3 @@ przy zmniejszaniu częstotliwości oscylatora, w celu zmniejszenia zużycia ener
 Dodatkowo, producent programowo zaimplementował obsługę interfejsu I2C. 
 Urządzenie może pełnić rolę Master lub Slave, z takim zastrzeżeniem że zegar
 taktujący komunikację może mieć częstotliwość maksymalną $\num{100}$ \si{kHz}.\\
-
-
-\section{Organizacja oprogramowania}
-\label{organizacja_opr} 
-
-
-\subsection{ESP8266 RTOS SDK}
-\label{sdk}
-
-
-\subsection{Budowa przykładowego programu w języku C}
-\label{example_C}
-
