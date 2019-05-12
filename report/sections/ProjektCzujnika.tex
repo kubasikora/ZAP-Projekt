@@ -1,2 +1,135 @@
 \chapter{Projekt czujnika opartego o moduł ESP8266 napisany w języku C}
 \label{projekt}
+
+W celu prezentacji architektury modułu ESP8266 zdecydowałem się zaprogramować 
+moduł w taki sposób aby mierzył on temperaturę i wysyłał tą informację do serwera
+poprzez sieć Wi-Fi. Temperatura będzie mierzona analogowo za pomocą termistora, 
+podłączonego do konwertera analogowo-cyfrowego.
+
+\section{Konfiguracja}
+\label{projekt_konfiguracja}
+
+\subsection{Interfejs szeregowy UART}
+\label{projekt_uart}
+W celu ułatwienia dalszej pracy, pracę na projektem rozpocząłem od konfiguracji
+interfejsu UART, tak aby móc w prosty sposób wyswietlać na ekranie swojego komputera
+informacje pochodzące od modułu. Inicjalizacją interfejsu UART zajmuje się funkcja
+\verb+uart_init()+. \\
+
+\begin{lstlisting}[style=customc,
+    frame=single,
+    caption={Konfiguracja interfejsu UART},
+    captionpos=b,
+    label={esptool_basic}]
+void uart_init(){
+  uart_config_t uart_config = {
+    .baud_rate = 115200,
+    .data_bits = UART_DATA_8_BITS,
+    .parity    = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+  };
+  uart_param_config(UART_NUM_0, &uart_config);
+  uart_driver_install(UART_NUM_0, ECHO_BUFFER_SIZE*2, 
+                      0, 0, NULL);
+}
+\end{lstlisting}
+
+Funkcja ta w typowy sposób, znany z mikrokontrolerów z rodziny STM32, inicjuje interfejs UART
+przy użyciu struktury przechowującej poszczególne parametry. W tym przypadku, struktura ta 
+jest typu \verb+uart_config_t+. W niej zostały ustawione:\\
+\begin{itemize}
+    \item prędkość transmisji 
+    \item ilość bitów danych
+    \item bit parzystości
+    \item ilość bitów stopu
+    \item kontrola transmisji\\
+\end{itemize} 
+
+Rzeczywista konfiguracja interfejsu następuje po wywołaniu po sobie funkcji \verb+uart_param_config+ oraz
+\verb+uart_driver_install+ z odpowiednim numerem interfejsu (w tym przypadku \verb+UART_NUM_0+).
+\newpage
+
+\subsection{Konwerter analogowo-cyfrowy}
+\label{projekt_adc}
+
+W podobny sposób został skonfigurowany konwerter analogo-cyfrowy do pomiaru napięcia odkładającego
+się na termistorze. W tym celu przygotowana została funkcja \verb+initialize_adc+, która przygotowuje 
+konwerter do pracy.
+
+\begin{lstlisting}[style=customc,
+    frame=single,
+    caption={Konfiguracja ADC},
+    captionpos=b,
+    label={esptool_basic}]
+void initialize_adc(){
+  adc_config_t adc_config;
+  adc_config.mode = ADC_READ_TOUT_MODE;
+  adc_config.clk_div = 8;
+  ESP_ERROR_CHECK(adc_init(&adc_config));
+}
+\end{lstlisting}
+
+W tym przypadku, przygotowana została struktura typu \verb+adc_config_t+,
+ w której ustawione zostały 
+dwa parametry: tryb pracy oraz dzielnik częstotliwości taktowania konwertera. 
+Tryb \verb+ADC_READ_TOUT_MODE+
+ustawia konwerter w tryb pomiaru napięcia zewnętrznego. Rzeczywista 
+konfiguracja konwertera następuję
+w chwili wywołania funkcji \verb+adc_init+. Wywołanie tej funkcji 
+makrem, pozwala na wypisanie informacji
+o błędzie w przypadku niepowodzenia konfiguracji konwertera.
+
+
+\subsection{Wi-Fi}
+\label{projekt_wifi}
+
+Zdecydowanie najciekawszym elementem do skonfigurowania była część 
+obsługująca komunikację przez sieć Wi-Fi. W tym celu przygotowana została
+funkcja \verb+wifi_init_sta+, która konfiguruje moduł w trybie \textit{Station}.\\
+
+\begin{lstlisting}[style=customc,
+    frame=single,
+    caption={Konfiguracja Wi-Fi},
+    captionpos=b,
+    label={esptool_basic}]
+void wifi_init_sta(){
+  wifi_event_group = xEventGroupCreate();
+  tcpip_adapter_init();
+
+  wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+  ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+  wifi_config_t wifi_config = {
+    .sta = {
+      .ssid = WIFI_SSID,
+      .password = WIFI_PASS
+    },
+  };
+
+  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, 
+                                      &wifi_config));
+  ESP_ERROR_CHECK(esp_wifi_start());
+}
+\end{lstlisting}
+
+W podanej funkcji, inicjalizowany jest adapter TCP/IP oraz Wi-Fi. W pierwszej kolejności
+tworzona jest struktura typu \verb+wifi_init_config_t+, którą inicjalizowany jest moduł.
+W dalszej kolejności, tworzona jest struktura \verb+wifi_config_t+, która przechowuje 
+informacje o sieci z którą moduł będzie się łączył. Jako wartości zmiennych \verb+.ssid+ 
+oraz \verb+.password+ zostały ustawione wartości makr \verb+WIFI_SSID+ i \verb+WIFI_PASS+.\\
+
+Ostatnim krokiem, jest ustawienie trybu pracy za pomocą funkcji \verb+esp_wifi_+
+\verb+set_mode+ 
+oraz załadowanie konfiguracji (funkcja \verb+esp_wifi_set_config+). Po poprawnej konfiguracji,
+nie pozostaje nic innego jak tylko włączyć moduł Wi-Fi za pomocą polecenia \verb+esp_wifi_start+.
+
+
+\section{Zadania w systemie czasu rzeczywistego FreeRTOS}
+\label{projekt_taski}
+
+W celu lepszego zapoznania się z systemem FreeRTOS, zdecydowałem się na rozdzielenie 
+funkcjonalności na dwa zadania wykonujące się współbieżnie na jednym procesorze. 
+Pierwsze zadanie \verb+sensor_task+ zajmowało się zapisa
+
+\section{}

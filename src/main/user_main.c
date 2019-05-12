@@ -9,6 +9,7 @@
 #include "esp_event_loop.h"
 #include "driver/uart.h"
 #include "driver/adc.h"
+#include "driver/pwm.h"
 
 
 #include <netdb.h>
@@ -58,9 +59,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
 
 void wifi_init_sta(){
     wifi_event_group = xEventGroupCreate();
-
     tcpip_adapter_init();
-    ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -92,17 +91,33 @@ void uart_init(){
     uart_driver_install(UART_NUM_0, ECHO_BUFFER_SIZE * 2, 0, 0, NULL);
 }
 
-static void initialize_adc(){
+void initialize_adc(){
     adc_config_t adc_config;
     adc_config.mode = ADC_READ_TOUT_MODE;
     adc_config.clk_div = 8;
     ESP_ERROR_CHECK(adc_init(&adc_config));
 }
 
+uint32_t duty = 250;
+
+void init_pwm(){
+    const int PWM_PERIOD = 500;
+    const uint32_t pin_num = 14;
+     // real duty = duty / period
+    int16_t phase = 0;
+
+    pwm_init(PWM_PERIOD, &duty, 1, &pin_num);
+    pwm_set_phases(&phase);
+    pwm_start();
+    
+}
+
 void app_main(){
+    ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL));
     uart_init();
     wifi_init_sta();
     initialize_adc();
+    init_pwm();
 
     xTaskCreate(adc_task, "adc_task", 1024, NULL, 10, NULL);
     xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);

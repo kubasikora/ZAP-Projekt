@@ -13,6 +13,7 @@
 extern EventGroupHandle_t wifi_event_group;
 extern const int WIFI_CONNECTED_BIT;
 extern float sensorValue;
+extern uint32_t duty;
 
 void http_get_task(void *pvParameters);
 void http_post_task(void *pvParameters);

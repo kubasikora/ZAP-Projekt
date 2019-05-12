@@ -81,7 +81,7 @@ przez port szeregowy.
 \label{esptool}
 Narzędzie \texttt{esptool.py} umożliwia prgoramowanie modułu ESP8266. Zostało one 
 napisane w języku Python w wersji 2. Aby zaprogramować płytkę należy wywołać 
-program z odpowiednimi argumentami. Przykładowa komenda wygląda w następujący sposób:
+program z odpowiednimi argumentami. Przykładowa komenda wygląda w następujący sposób:\\
 
 \begin{lstlisting}[style=customc,
     frame=single,
@@ -106,14 +106,13 @@ inicjalizującego. W pierwszej kolejnośći inicjalizowane są peryferia oraz in
 systemowe, a następnie uruchamiane są zadania, które wykonują się w sposób współbieżny. \\
 
 Na poniższym listingu została przedstawiona funkcja \texttt{app\_{}main} przykładowego programu
-realizującego dwa zadania, od której moduł rozpoczyna pracę po restarcie.
+realizującego dwa zadania, od której moduł rozpoczyna pracę po restarcie.\\
 
 \begin{lstlisting}[style=customc,
     frame=single,
     caption={Przykładowa funkcja \texttt{app\_{}main}},
     captionpos=b,
     label={esptool_basic}]
-
 void app_main(){
   #include"freertos/FreeRTOS.h"
   #include"freertos/task.h"
