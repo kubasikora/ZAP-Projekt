@@ -19,8 +19,8 @@
 
 #include "include/tasks.h"
 
-#define WIFI_SSID "NiechRyczyZBoluRannyLos"
-#define WIFI_PASS "br3dz1pan"
+#define WIFI_SSID "esp-test"
+#define WIFI_PASS "esp-test"
 
 SemaphoreHandle_t xMutex;
 EventGroupHandle_t wifi_event_group;
