@@ -1,6 +1,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 
 #include "esp_wifi.h"
 #include "esp_system.h"
@@ -63,7 +64,9 @@ void http_post_task(void *pvParameters){
 
         // create message
         char sensorVal[16];
+        xSemaphoreTake(xMutex, portMAX_DELAY);
         convertToFloat(sensorValue, sensorVal);
+        xSemaphoreGive(xMutex);
         ESP_LOGI(TAG, "Sensor value: %s", sensorVal);
         body_length = sprintf(body, "data=%s", sensorVal);
         message_length = sprintf(message, "%s%d\r\n\r\n%s\r\n\r\n", POST_REQUEST, body_length, body);

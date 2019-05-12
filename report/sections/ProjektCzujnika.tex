@@ -4,7 +4,9 @@
 W celu prezentacji architektury modułu ESP8266 zdecydowałem się zaprogramować 
 moduł w taki sposób aby mierzył on temperaturę i wysyłał tą informację do serwera
 poprzez sieć Wi-Fi. Temperatura będzie mierzona analogowo za pomocą termistora, 
-podłączonego do konwertera analogowo-cyfrowego.
+podłączonego do konwertera analogowo-cyfrowego. Czujnik będzie sygnalizował 
+temperaturę za pomocą diody LED, której jasność będzie zwiększała się wraz z 
+odczytem czujnika.
 
 \section{Konfiguracja}
 \label{projekt_konfiguracja}
@@ -125,11 +127,177 @@ oraz załadowanie konfiguracji (funkcja \verb+esp_wifi_set_config+). Po poprawne
 nie pozostaje nic innego jak tylko włączyć moduł Wi-Fi za pomocą polecenia \verb+esp_wifi_start+.
 
 
+\subsection{Konfiguracja kanału PWM}
+\label{projekt_pwm}
+Jako ostatni, skofigurowany został kanał PWM, do sterowania jasnością diody LED.
+W tym celu przygotowana została funkcja \verb+init_pwm+, która przygotowywała stosowny 
+kanał.\\
+
+\begin{lstlisting}[style=customc,
+    frame=single,
+    caption={Konfiguracja pojedynczego kanału PWM},
+    captionpos=b,
+    label={projekt_pwm}]
+void init_pwm(){
+  const int PWM_PERIOD = 500;
+  const uint32_t pin_num = 14;
+  uint32_t duty = 250; // realDuty = duty/PWM_PERIOD
+  const int16_t phase = 0;
+   
+  pwm_init(PWM_PERIOD, &duty, 1, &pin_num);
+  pwm_set_phases(&phase);
+  pwm_start();
+}
+\end{lstlisting}
+
+Inicjalizacją kanałów PWM zajmuje się funkcja systemowa \verb+pwm_init+, która jako argumenty
+przyjmuje wartość okresu PWM, wypełnienia, ilość kanałów oraz numery pinów. W tym przypadku zdecydowałem się 
+na okres $\num{500}$ \si{\micro s}, co daje częstotliwość $\num{2}$ \si{KHz}.
+Warto zauważyć że funkcja przyjmuje wskaźniki na tablicę wypełnień oraz numerów pinów.
+Pozwala to na inicjalizację wielu pinów jednym poleceniem. W tym przypadku, gdy interesujący
+jest tylko jeden kanał, należy zamiast wartości zmiennych podać ich adresy.\\
+
+Każda zmiana wypełnienia czy fazy generowanego sygnału, musi zostać zatwierdzona
+poprzez wywołanie funkcji \verb+pwm_start+.
+
 \section{Zadania w systemie czasu rzeczywistego FreeRTOS}
 \label{projekt_taski}
 
 W celu lepszego zapoznania się z systemem FreeRTOS, zdecydowałem się na rozdzielenie 
 funkcjonalności na dwa zadania wykonujące się współbieżnie na jednym procesorze. 
-Pierwsze zadanie \verb+sensor_task+ zajmowało się zapisa
+Pierwsze zadanie \verb+sensor_task+ zajmuje się mierzeniem temperatury 
+za pomocą konwertera analogowo-cyfrowego i alarmowaniem o za wysokiej temperaturze
+za pomocą diody LED sterowanej sygnałem PWM. 
+Drugie zadanie \verb+poster_task+,
+zajmuje się komunikacją z serwerem poprzez REST API. Przesyła ono dane z czujnika
+za pomocą metody HTTP POST. Zadania korzystają z współdzielonej danej, jaką jest 
+wartość temperatury, dlatego też dostęp do tej zmiennej jest chroniony poprzez 
+semafor binarny.
 
-\section{}
+\subsection{Zadanie mierzenia temperatury}
+\label{projekt_sensor_task}
+Zadanie pomiarowe było realizowane przez funkcję \verb+adc_task+. Jej postać została przedstawiona 
+na listingu \ref{projekt_adc_task}
+
+\begin{lstlisting}[style=customc,
+  frame=single,
+  caption={Postać funkcji mierzącej temperaturę},
+  captionpos=b,
+  label={projekt_adc_task}]
+void adc_task(void *pvParameters){
+  const float A = 0.3101;
+  const float B = -250.243;
+  uint16_t adc_data[100];
+
+  while (1) {
+    if (ESP_OK == adc_read(&adc_data[0])) {
+      ESP_LOGI(TAG, "adc read: %d", adc_data[0]);
+      xSemaphoreTake(xMutex, portMAX_DELAY);
+      sensorValue =  adc_data[0]*A + B;
+      xSemaphoreGive(xMutex);
+      uint32_t duty = 0;        
+            
+      if (sensorValue > 25.0){
+        duty = (sensorValue - 25.0)*50;
+        if (duty > 500) duty = 500;
+        ESP_LOGI(TAG, "DUTY = %d", duty);
+      }
+      pwm_set_duties(&duty);
+      pwm_start();
+    }
+    vTaskDelay(100 / portTICK_RATE_MS);
+  }
+}
+\end{lstlisting}
+
+W pierwszej kolejności, mierzone jest napięcie na termistorze za pomocą konwertera 
+analogowo-cyfrowego, a następnie zamieniane na wartość temperatury wykorzystując
+interpolację liniową. Zapis do zmiennej \verb+sensorValue+ odbywa się przy użyciu
+semaforów binarnych, ponieważ z tej zmiennej korzystać będzie drugie zadanie. \\
+
+Po dokonaniu pomiaru, zadanie sprawdza czy zmierzona temperatura nie jest większa od 
+ustalonej wartości progowej od której moduł ma alarmować użytkownika o za wysokiej
+temperaturze. Ustalono wartość progu równą $\num{25.0}$ stopni Celcjusza.\\
+
+Wartość temperatury przekraczającej próg jest skalowana do wartości wypełnienia.
+W przypadku przekroczenia wartości maksymalnej równej okresowi PWM, wartość wypełnienia 
+nasyca się.\\
+
+\subsection{Zadanie komunikacji z serwerem}
+\label{projekt_poster_task}
+Drugie zadanie obsługuje komunikację z serwerem, wykorzystując komunikację przez Wi-Fi.
+Zadanie to jest wykonywane przez funkcję \verb+poster_task+. Funkcja ta jest o wiele bardziej
+złożona niż poprzednie zadanie. Komunikacja z serwerem HTTP wymaga kilku czynności: \\
+
+\begin{itemize}
+    \item stworzenie żądania HTTP POST
+    \item wykorzystanie usługi DNS do znalezienia adresu IP serwera
+    \item utworzenie socketu
+    \item połączenie się z socketem
+    \item zapisanie wiadomości do socketu
+    \item odebranie wiadomości zwrotnej
+    \item zamknięcie socketu
+\end{itemize}
+
+W pierwszej kolejności tworzona jest wiadomość HTTP POST. Przykładowa postać tej
+wiadomości została przedstawiona poniżej:
+
+\begin{lstlisting}[style=customlatex,
+    frame=single,
+    caption={Przykładowa postać żądania HTTP POST},
+    captionpos=b,
+    label={projekt_adc_task}]
+POST /data HTTP/1.0
+Host: dell:8081
+User-Agent: esp-idf/1.0 esp32"
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 8
+
+data=23.88
+
+\end{lstlisting}
+
+Wiadomość ta zostaje wygenerowana po odczytaniu wartości zmierzonej przez moduł.
+Odczyt tej wartości odbywa się w sposób synchronizowany przez semafor binarny.\\
+
+\subsubsection{Ciekawostka na temat funkcji \texttt{sprintf}}
+W trakcie tworzenia oprogramowania, nastąpiła potrzeba zamiany wartości zmiennoprzecinkowej
+na napis, tak aby mógł zostać on w prosty sposób dołączony do wysyłanej wiadomości.
+Okazało się że funkcja \verb+sprintf+, która służy między innymi do przeprowadzania takiej
+konwersji, nie obsługuje poprawnie formatu \verb+%f+. Jest to znany problem, opisywany
+szeroko na forach internetowych. W celu zamiany liczby zmiennoprzecinkowej na napis
+napisana została funkcja \verb+convertToFloat+, która obchodzi problem w dość prosty
+ale mało efektywny sposób, dodatkowo obcinając dokładność liczby (zakładane są tylko 
+dwie liczby po przecinku).\\
+
+\subsubsection{Serwer danych}
+Odebraniem wiadomości na komputerze PC, zajmuje się aplikacja napisana w języku 
+Javascript, z wykorzystaniem biblioteki \verb+express+. Aplikacja ta odczytuje 
+wartość otrzymanej temperatury i wyświetla ją na terminalu.
+
+\begin{lstlisting}[style=customjs,
+  frame=single,
+  caption={Prosta aplikacja do zbierania danych z czujnika},
+  captionpos=b,
+  label={projekt_adc_task}]
+var express = require('express');
+var bodyParser = require('body-parser');
+var app  = express();
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.post('/data', (req, res) => {
+    var data = req.body.data;
+    console.log("Got " + data + " from ESP8266");
+    res.send("OK\n");
+});
+
+var server = app.listen(8081, () => {
+    var host = server.address().address;
+    var port = server.address().port;
+
+    console.log("ZAP Server listening at http://%s:%s", host, port)
+})
+
+\end{lstlisting}

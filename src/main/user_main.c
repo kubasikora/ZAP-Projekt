@@ -2,6 +2,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 
 #include "esp_wifi.h"
 #include "esp_system.h"
@@ -18,9 +19,10 @@
 
 #include "include/tasks.h"
 
-#define WIFI_SSID "esp-test"
-#define WIFI_PASS "esp-test"
+#define WIFI_SSID "NiechRyczyZBoluRannyLos"
+#define WIFI_PASS "br3dz1pan"
 
+SemaphoreHandle_t xMutex;
 EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 
@@ -98,12 +100,12 @@ void initialize_adc(){
     ESP_ERROR_CHECK(adc_init(&adc_config));
 }
 
-uint32_t duty = 250;
+
 
 void init_pwm(){
     const int PWM_PERIOD = 500;
     const uint32_t pin_num = 14;
-     // real duty = duty / period
+    uint32_t duty = 0;// real duty = duty / period
     int16_t phase = 0;
 
     pwm_init(PWM_PERIOD, &duty, 1, &pin_num);
@@ -119,8 +121,9 @@ void app_main(){
     initialize_adc();
     init_pwm();
 
+    xMutex = xSemaphoreCreateMutex();
     xTaskCreate(adc_task, "adc_task", 1024, NULL, 10, NULL);
-    xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);
-    xTaskCreate(http_get_task, "http_get_task", 4096, NULL, 10, NULL);
+    //xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);
+    //xTaskCreate(http_get_task, "http_get_task", 4096, NULL, 10, NULL);
     xTaskCreate(http_post_task, "http_post_task", 4096, NULL, 10, NULL);
 }

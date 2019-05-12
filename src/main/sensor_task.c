@@ -1,5 +1,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 
 #include "driver/uart.h"
 #include "driver/adc.h"
@@ -12,18 +13,21 @@ float sensorValue;
 static const char* TAG = "ADC";
 
 void adc_task(void *pvParameters){
-    const float A = 0.135;
-    const float B = -47.1;
-    uint16_t adc_data[100];
+    const float A = 0.3101;
+    const float B = -250.243;
+    uint16_t adc_data[1];
+    const float THRESHOLD = 25.0;
 
     while (1) {
         if (ESP_OK == adc_read(&adc_data[0])) {
             ESP_LOGI(TAG, "adc read: %d", adc_data[0]);
+            xSemaphoreTake(xMutex, portMAX_DELAY);
             sensorValue =  adc_data[0]*A + B;
+            xSemaphoreGive(xMutex);
             uint32_t duty = 0;        
             
-            if (sensorValue > 20.0){
-                duty = (sensorValue - 20.0)*50;
+            if (sensorValue > THRESHOLD){
+                duty = (sensorValue - THRESHOLD)*50;
                 if (duty > 500) {
                     duty = 500;
                 }
@@ -32,6 +36,6 @@ void adc_task(void *pvParameters){
             pwm_set_duties(&duty);
             pwm_start();
         }
-        vTaskDelay(1000 / portTICK_RATE_MS);
+        vTaskDelay(100 / portTICK_RATE_MS);
     }
 }
