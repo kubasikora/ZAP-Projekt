@@ -1,14 +1,87 @@
 \chapter{Przegląd pozostałych możliwości wykorzystania modułu}
 \label{inne}
 
+W tym rozdziale przedstawione zostały inne możliwości programowania 
+modułu ESP8266. Język C ma to do siebie że jest językiem pozostającym 
+blisko sprzętu, co może uprzykrzać życie hobbystom lub początkującym
+konstruktorom urządzeń internetu rzeczy. Aby ułatwić programowanie, 
+powstał szereg różnych wysokopoziomowych rozwiązań znacząco upraszczające 
+korzystanie z modułu.
+
 \section{Wykorzystanie języka skryptowego Lua}
 \label{lua}
+Po wgraniu specjalnego programu NodeMCU do pamięci Flash modułu,
+możemy programować w języku skryptowym Lua. Programowanie odbywa się wtedy
+z poziomu Arduino IDE.\\
 
+Skrypty mogą być wgrywane jako pliki \verb+.lua+ lub pisane i wykonywane na bieżąco
+tak jak na przykład w przypadku interpretera języka Python. Język Lua cechuje się 
+olbrzymią prostotą i szybkością programowania. Przykładowo połączenie się z wifi 
+wymaga dwóch linijek kodu:\\
 
-\section{Wykorzystanie języka MicroPython}
+\begin{lstlisting}[style=customjs,
+    frame=single,
+    caption={Kod łączący się z siecią Wi-Fi napisany w języku Lua},
+    captionpos=b,
+    label={lua_example}]
+wifi.setmode(wifi.STATION)
+wifi.sta.config("SSID","HASLO")
+\end{lstlisting}
+
+Prostota języka zachęca do korzystania z niego przy pisaniu aplikacji internetu 
+rzeczy. Niestety jako język wysokopoziomowy, jest mocno oddzielony od sprzętu i nie 
+pozwala na zrozumienie architektury modułu. Po resecie urządzenia, oprogramowanie szuka
+zapisanego pliku \texttt{init.lua} z programem użytkownika.
+
+\section{Wykorzystanie MicroPythona}
 \label{micropython}
+Korzystanie z MicroPythona jest bardzo podobne do korzystania z NodeMCU. W pierwszej
+kolejności należy wgrać interpreter na moduł ESP8266. Po resecie, oprogramowanie szuka
+pliku \texttt{main.py} z programem użytkownika.
+Język programowania wykorzystywany w MicroPythonie różni się nieznacznie od zwykłego
+Pythona w wersji 3. Różnice są jednak niewielkie, dlatego jeżeli ktoś zna Pythona to
+bardzo łatwo jest mu zaprogramować urządzenie. Poniżej znajduje się kod 
+do połączenia modułu z siecią Wi-Fi.
+
+\begin{lstlisting}[style=custompython, caption={Przykładowy kod do 
+    połączenia się z siecią Wi-Fi w języku MicroPython},
+    captionpos=b]
+import network
+wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+if not wlan.isconnected():
+    print('connecting to network...')
+    wlan.connect('essid', 'password')
+    while not wlan.isconnected():
+        pass
+\end{lstlisting}
 
 
+ 
 \section{AT Commands}
 \label{AT}
+Aby wykorzystać moduł ESP8266 do połaczenia się z siecią Wi-Fi, nie jest wymagana
+umiejętność programowania urządzenia. Większość urządzeń z pudełka przychodzi z wgranym
+programem ESP8266 AT Firmware, który pozwala na łączenie sie modułu z siecią Wi-Firmware
+za pomocą specjalnych komend AT. Zasada korzystania z modułu jest prosta. Urządzenie 
+nadrzędne wysyła poprzez port szeregowy komendę a następnie przez port szeregowy odbiera dane.
+Moduł ESP8266 pełni rolę pośrednika w komunikacji. Na poniższym listingu znajduje się 
+kod na Arduino, który uruchamia serwer HTTP za pośrednictwem modułu.\\
+
+\begin{lstlisting}[style=customc,
+    frame=single,
+    caption={Kod uruchamiający serwer HTTP na płytce Arduino z wykorzystaniem modułu ESP8266},
+    captionpos=b,
+    label={projekt_adc_task}]
+sendData("AT+RST\r\n",500,DEBUG); 
+sendData("AT+CWMODE=2\r\n",500,DEBUG); 
+sendData("AT+CIFSR\r\n",500,DEBUG);
+sendData("AT+CIPMUX=1\r\n",500,DEBUG); 
+sendData("AT+CIPSERVER=1,80\r\n",500,DEBUG); 
+\end{lstlisting}
+
+W pierwszej kolejności urządzenie nadrzędne resetuje moduł i przestawia go w tryb 
+\textit{Access Point}. Następnie konfiguruje moduł tak aby uzyskał adres IP oraz 
+umożliwił połączenie wielu stacjom. Ostatnia komenda uruchamia serwer.
+
 

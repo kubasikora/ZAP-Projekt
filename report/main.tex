@@ -14,6 +14,7 @@
 \usepackage{siunitx}
 \usepackage{paracol}
 \usepackage{gensymb}
+\usepackage{afterpage}
 
 % Pływające obrazki
 \usepackage{float}
@@ -60,6 +61,25 @@
   showstringspaces=false,
 }
 
+\lstdefinestyle{custompython}{
+keywords={while, if, not, case, import, True},
+keywordstyle=\color{blue}\bfseries,
+basicstyle=\footnotesize\ttfamily
+}
+
+\lstdefinestyle{customlua}{
+  language         = {[5.0]Lua},
+  basicstyle       = \ttfamily,
+  showstringspaces = false,
+  upquote          = true,
+}
+
+\newcommand\blankpage{%
+    \null
+    \thispagestyle{empty}%
+    \addtocounter{page}{-1}%
+	\newpage}
+	
 \lstdefinestyle{customc}{
 	breaklines=true,
 	frame=tb,
@@ -121,7 +141,7 @@
             {\LARGE {\bf \mbox{Instytut Automatyki i Informatyki Stosowanej}}}\\
             
             \vspace{5cm}
-            \leftskip-2cm
+            \leftskip-2.2cm
 			{\bf \Huge \mbox{Zaawansowane architektury procesorów} \vskip 0.1cm}
 		\end{center}
 		\vspace{0.1cm}
@@ -151,7 +171,20 @@
 }
 \makeatother
 \maketitle
+\blankpage
 \tableofcontents
+
+\chapter{Wstęp}
+W niniejszym sprawozdaniu została zaprezentowana architektura modułu ESP8266. W celu 
+zapoznania się z modułem, został przygotowany projekt czujnika temperatury komunikujący
+się z serwerem HTTP, uruchamianym na komputerze osobistym.\\
+
+W drugim rozdziale przedstawiona została architektura modułu, jego budowa, układ pamięci
+oraz interfejsy zewnętrzne. W trzecim rozdziale przedstawiona została architektura 
+oprogramowania napisana w języku C, wraz z opisem wykorzystanego środowiska programistycznego.
+Rozdział czwarty opowiada już o samym projekcie czujnika, komunikującego się przez Wi-Fi
+z komputerem osobistym. Piąty rodział przedstawia inne możliwości wykorzystywania modułu
+w rozwiązaniach wbudowanych, bez korzystania z języka C.
 
 \input{sections/OmowienieArchitektury}
 \input{sections/OrganizacjaOprogramowania}

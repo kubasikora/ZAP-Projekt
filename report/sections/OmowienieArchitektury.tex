@@ -194,3 +194,19 @@ przy zmniejszaniu częstotliwości oscylatora, w celu zmniejszenia zużycia ener
 Dodatkowo, producent programowo zaimplementował obsługę interfejsu I2C. 
 Urządzenie może pełnić rolę Master lub Slave, z takim zastrzeżeniem że zegar
 taktujący komunikację może mieć częstotliwość maksymalną $\num{100}$ \si{kHz}.\\
+
+
+\subsection{Watchdog}
+\label{watchdog}
+
+Moduł ESP8266 został wyposażony w systemowego watchdoga sprzętowego oraz
+jednego watchdoga realizowanego programowo. Zadaniem watchdoga jest reset urządzenia 
+w przypadku sytuacji awaryjnej lub błędu. W pierwszej kolejności reaguje watchdog
+programowy, który w przypadku błędu resetuje urządzenie i na porcie szeregowym 
+wyrzuca informację o błędzie. W przypadku gdy watchdog programowy nie zareaguje, 
+do działania wkracza watchdog sprzętowy. Reset przez watchdog sprzętowy nie powoduje
+wypisania informacji o błędzie.\\
+
+Watchdogi w ESP8266 pilnują aby kod użytkownika nie wykonywał się zbyt długo, ponieważ
+w momencie wykonywania kodu użytkownika, nie wykonuje się kod obsługujący komunikację 
+przez Wi-Fi.
