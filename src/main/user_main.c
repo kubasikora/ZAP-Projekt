@@ -1,4 +1,5 @@
 #include "freertos/FreeRTOS.h"
+#include "freertos/FreeRTOSConfig.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
@@ -105,7 +106,7 @@ void initialize_adc(){
 void init_pwm(){
     const int PWM_PERIOD = 500;
     const uint32_t pin_num = 14;
-    uint32_t duty = 0;// real duty = duty / period
+    uint32_t duty = 0;
     int16_t phase = 0;
 
     pwm_init(PWM_PERIOD, &duty, 1, &pin_num);
@@ -122,7 +123,7 @@ void app_main(){
     init_pwm();
 
     xMutex = xSemaphoreCreateMutex();
-    xTaskCreate(adc_task, "adc_task", 1024, NULL, 10, NULL);
+    xTaskCreate(adc_task, "adc_task", 1024, NULL, tskIDLE_PRIORITY, NULL);
     //xTaskCreate(echo_task, "uart_echo_task", 1024, NULL, 10, NULL);
     //xTaskCreate(http_get_task, "http_get_task", 4096, NULL, 10, NULL);
     xTaskCreate(http_post_task, "http_post_task", 4096, NULL, 10, NULL);
